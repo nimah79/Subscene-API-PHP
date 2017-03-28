@@ -1,12 +1,13 @@
 # Subscene-REST-API
 Unofficial REST API for Subscene subtitle service, written in PHP
 
-**Required parameters:** `movie`
+## Required parameters:
+`movie`
 
-**Example:**
+## Example
 `http://yourdomain.com/subscene.php?movie=fast%20five`
 
-**Response**:
+## Response
 The API will send a response in JSON format with this objects:
 
 `title`: movie title
