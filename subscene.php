@@ -1,10 +1,10 @@
 <?php
 
 /*
-Subscene REST API
-By NimaH79
-http://nimatv.ir
-*/
+ * Subscene REST API
+ * By NimaH79
+ * http://nimatv.ir
+ */
 
 header('Content-Type: application/json');
 if(isset($_GET["movie"])) {
