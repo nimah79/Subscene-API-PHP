@@ -1,5 +1,5 @@
-# Subscene-REST-API
-Unofficial REST API for Subscene subtitle service, written in PHP
+# Subscene-API-PHP
+Unofficial API for Subscene subtitle service, written in PHP
 
 ## Required parameters:
 `movie`
