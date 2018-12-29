@@ -1,27 +1,71 @@
 <?php
 
 /*
- * Subscene REST API
+ * Subscene-API-PHP
  * By NimaH79
- * http://nimatv.ir
+ * https://NimaH79.ir
  */
 
-header('Content-Type: application/json');
-if (isset($_GET['movie'])) {
-    $search = file_get_contents('https://subscene.com/subtitles/title?q='.urlencode($_GET['movie']).'&l=farsi_persian');
-    if (preg_match('/<div class="title">.*?<a href="(.*?)">.*?<\/a>.*?<\/div>/s', $search, $title)) {
-        $list = file_get_contents('https://subscene.com'.$title[1].'/farsi_persian');
-        if (preg_match('/<td class="a1">.*?<a href="(.*?)">.*?<span class="l r positive-icon">/s', $list, $sub)) {
-            $page = file_get_contents('https://subscene.com'.$sub[1]);
-            if (preg_match('/<div class="download">.*?<a href="(.*?)" rel="nofollow" onclick="DownloadSubtitle\(this\)" id="downloadButton" class="button positive">.*?Download Farsi/s', $page, $download)) {
-                preg_match('/<title>(.*?)<\/title>/', str_replace('Subscene - Subtitles for ', '', $list), $name);
-                preg_match('/<img src="(.*?)"/', $list, $poster);
-                exit(json_encode(['title' => htmlspecialchars_decode(str_replace('&#39;', "'", $name[1])), 'poster' => $poster[1], 'download' => 'https://subscene.com'.$download[1]]));
-            }
-            exit('{"error":"not found"}');
+libxml_use_internal_errors(true);
+
+class SubScene {
+
+    private static $base_url = 'https://subscene.com';
+    private static $default_language = 'farsi_persian';
+
+    public static function search($title) {
+        $page = self::curl_get_contents(self::$base_url.'/subtitles/title?q='.urlencode($title));
+        $titles = self::xpathQuery('//ul/li/div[@class=\'title\']/a/text()', $page);
+        $urls = self::xpathQuery('//ul/li/div[@class=\'title\']/a/@href', $page);
+        $results = [];
+        for($i = 0; $i < count($titles); $i++) {
+            $results[] = ['title' => $titles[$i]->nodeValue, 'url' => self::$base_url.$urls[$i]->nodeValue];
         }
-        exit('{"error":"not found"}');
+        return $results;
     }
-    exit('{"error":"not found"}');
+
+    public static function getSubtitles($url, $language = '') {
+        if(empty($language)) {
+            $language = self::$default_language;
+        }
+        $page = self::curl_get_contents($url.'/'.$language);
+        $titles = self::xpathQuery('//tr/td/a/span[2]/text()', $page);
+        $urls = self::xpathQuery('//tr/td/a/@href', $page);
+        $results = [];
+        for($i = 0; $i < count($titles); $i++) {
+            $results[] = ['title' => trim($titles[$i]->nodeValue), 'url' => self::$base_url.$urls[$i]->nodeValue];
+        }
+        return $results;
+    }
+
+    public static function getDownloadUrl($url) {
+        $page = self::curl_get_contents($url);
+        $url = self::xpathQuery('//a[@id=\'downloadButton\']/@href', $page);
+        if(count($url) == 0) {
+            return false;
+        }
+        return self::$base_url.$url[0]->nodeValue;
+    }
+
+    private static function curl_get_contents($url) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        return $response;
+    }
+
+    private static function xpathQuery($query, $html) {
+        if(empty($query) || empty($html)) {
+            return false;
+        }
+        $dom = new DomDocument;
+        $dom->loadHTML($html);
+        $xpath = new DomXPath($dom);
+        $results = $xpath->query($query);
+        return $results;
+    }
+
 }
-exit('{"error":"parameter movie is required"}');
