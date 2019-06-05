@@ -3,7 +3,7 @@
 /*
  * Subscene-API-PHP
  * By NimaH79
- * https://NimaH79.ir
+ * http://NimaH79.ir
  */
 
 libxml_use_internal_errors(true);
@@ -15,7 +15,7 @@ class subscene
 
     public static function search($title)
     {
-        $page = self::curl_get_contents(self::$base_url.'/subtitles/title?q='.urlencode($title));
+        $page = self::curl_post(self::$base_url.'/subtitles/searchbytitle', ['query' => $title]);
         $titles = self::xpathQuery('//ul/li/div[@class=\'title\']/a/text()', $page);
         $urls = self::xpathQuery('//ul/li/div[@class=\'title\']/a/@href', $page);
         $results = [];
@@ -59,6 +59,20 @@ class subscene
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        return $response;
+    }
+
+    private static function curl_post($url, $parameters = [])
+    {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $parameters);
         $response = curl_exec($ch);
         curl_close($ch);
 
