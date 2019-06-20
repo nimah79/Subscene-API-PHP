@@ -10,7 +10,6 @@ libxml_use_internal_errors(true);
 
 class Subscene
 {
-
     private $username;
     private $password;
     private $cookie_file;
@@ -18,7 +17,8 @@ class Subscene
     private $base_url = 'https://subscene.com';
     private $default_language = 'farsi_persian';
 
-    public function __construct($username, $password, $cookie_file = __DIR__.'/cookies.txt') {
+    public function __construct($username, $password, $cookie_file = __DIR__.'/cookies.txt')
+    {
         $this->username = $username;
         $this->password = $password;
         $this->cookie_file = $cookie_file;
@@ -27,11 +27,12 @@ class Subscene
     public function search($title, $exit_on_bad_request = false)
     {
         $page = $this->curl_post($this->base_url.'/subtitles/searchbytitle', ['query' => $title]);
-        if($this->isBadRequest($page)) {
-            if($exit_on_bad_request) {
+        if ($this->isBadRequest($page)) {
+            if ($exit_on_bad_request) {
                 return false;
             }
             $this->login($this->username, $this->password);
+
             return $this->search($title, true);
         }
         $titles = $this->xpathQuery('//ul/li/div[@class=\'title\']/a/text()', $page);
@@ -50,11 +51,12 @@ class Subscene
             $language = $this->default_language;
         }
         $page = $this->curl_get_contents($url.'/'.$language);
-        if($this->isBadRequest($page)) {
-            if($exit_on_bad_request) {
+        if ($this->isBadRequest($page)) {
+            if ($exit_on_bad_request) {
                 return false;
             }
             $this->login($this->username, $this->password);
+
             return $this->getSubtitles($url, $language, true);
         }
         $titles = $this->xpathQuery('//tr/td/a/span[2]/text()', $page);
@@ -70,11 +72,12 @@ class Subscene
     public function getDownloadUrl($url, $exit_on_bad_request = false)
     {
         $page = $this->curl_get_contents($url);
-        if($this->isBadRequest($page)) {
-            if($exit_on_bad_request) {
+        if ($this->isBadRequest($page)) {
+            if ($exit_on_bad_request) {
                 return false;
             }
             $this->login($this->username, $this->password);
+
             return $this->getDownloadUrl($url, true);
         }
         $url = $this->xpathQuery('//a[@id=\'downloadButton\']/@href', $page);
@@ -89,15 +92,15 @@ class Subscene
     {
         $login_info = $this->curl_get_contents($this->base_url.'/account/login');
         $login_info = $this->xpathQuery('//script[@id="modelJson"]', $login_info);
-        if($login_info->length < 1) {
+        if ($login_info->length < 1) {
             return false;
         }
         $login_info = json_decode(htmlspecialchars_decode(trim($login_info[0]->nodeValue)), true);
         $form_info = $this->curl_post('https://identity.jeded.com'.$login_info['loginUrl'], http_build_query(['idsrv.xsrf' => $login_info['antiForgery']['value'], 'username' => $username, 'password' => $password, 'rememberMe' => 'true']));
         $form = [];
-        foreach(['id_token', 'access_token', 'token_type', 'expires_in', 'scope', 'state', 'session_state'] as $key) {
+        foreach (['id_token', 'access_token', 'token_type', 'expires_in', 'scope', 'state', 'session_state'] as $key) {
             ${$key} = $this->xpathQuery('//input[@name="'.$key.'"]/@value', $form_info);
-            if(${$key}->length < 1) {
+            if (${$key}->length < 1) {
                 return false;
             }
             ${$key} = ${$key}[0]->nodeValue;
@@ -157,5 +160,4 @@ class Subscene
     {
         return strpos($html, 'Bad request') !== false;
     }
-
 }
