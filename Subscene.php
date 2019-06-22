@@ -185,7 +185,8 @@ class Subscene
         return $result;
     }
 
-    public function getDownload($url, $filename) {
+    public function getDownload($url, $filename)
+    {
         $data = $this->curl_get_contents($url);
         $file_name = $filename;
         header('Content-Type: application/zip');
