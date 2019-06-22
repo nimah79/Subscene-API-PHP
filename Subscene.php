@@ -10,33 +10,37 @@ libxml_use_internal_errors(true);
 
 class Subscene
 {
+
     private $username;
     private $password;
     private $cookie_file;
+    private $languages;
 
     private $base_url = 'https://subscene.com';
-    private $default_language = 'farsi_persian';
 
-    public function __construct($username, $password, $cookie_file = __DIR__.'/cookies.txt')
-    {
-        $this->username = $username;
-        $this->password = $password;
-        $this->cookie_file = $cookie_file;
+    public function __construct($username, $password, $languages = [46], $cookie_file = __DIR__.'/cookies.txt') { // 46 is for Persian
+        foreach([
+            'username',
+            'password',
+            'cookie_file',
+            'languages'
+        ] as $var) {
+            $this->{$var} = ${$var};
+        }
     }
 
     public function search($title, $exit_on_bad_request = false)
     {
         $page = $this->curl_post($this->base_url.'/subtitles/searchbytitle', ['query' => $title]);
-        if ($this->isBadRequest($page)) {
-            if ($exit_on_bad_request) {
+        if(!$this->isLoggedIn($page)) {
+            if($exit_on_bad_request) {
                 return false;
             }
             $this->login($this->username, $this->password);
-
             return $this->search($title, true);
         }
-        $titles = $this->xpathQuery('//ul/li/div[@class=\'title\']/a/text()', $page);
-        $urls = $this->xpathQuery('//ul/li/div[@class=\'title\']/a/@href', $page);
+        $titles = $this->xpathQuery('//ul/li/div[@class="title"]/a/text()', $page);
+        $urls = $this->xpathQuery('//ul/li/div[@class="title"]/a/@href', $page);
         $results = [];
         for ($i = 0; $i < $titles->length; $i++) {
             $results[] = ['title' => $titles[$i]->nodeValue, 'url' => $this->base_url.$urls[$i]->nodeValue];
@@ -45,68 +49,113 @@ class Subscene
         return $results;
     }
 
-    public function getSubtitles($url, $language = '', $exit_on_bad_request = false)
+    public function getSubtitles($url, $exit_on_bad_request = false)
     {
-        if (empty($language)) {
-            $language = $this->default_language;
-        }
-        $page = $this->curl_get_contents($url.'/'.$language);
-        if ($this->isBadRequest($page)) {
-            if ($exit_on_bad_request) {
+        $page = $this->curl_get_contents($url);
+        if(!$this->isLoggedIn($page)) {
+            if($exit_on_bad_request) {
                 return false;
             }
             $this->login($this->username, $this->password);
-
-            return $this->getSubtitles($url, $language, true);
+            return $this->getSubtitles($url, true);
+        }
+        $result = [];
+        foreach([
+            'name' => '//h2/text()',
+            'year' => '//li[strong[contains(text(), "Year")]]/text()[last()]',
+            'poster' => '//img[@alt="Poster"]/@src',
+            'imdb' => '//a[@class="imdb"]/@href'
+        ] as $part => $query) {
+            ${$part} = $this->xpathQuery($query, $page);
+            if (${$part}->length > 0) {
+                $result[$part] = trim(${$part}[0]->nodeValue);
+            }
         }
         $titles = $this->xpathQuery('//tr/td/a/span[2]/text()', $page);
-        $urls = $this->xpathQuery('//tr/td/a/@href', $page);
-        $results = [];
+        $languages = $this->xpathQuery('//tr/td/a/span[1]/text()', $page);
+        $authors = $this->xpathQuery('//td[@class="a5"]/a/text()', $page);
+        $urls = $this->xpathQuery('//tr/td[1]/a/@href', $page);
+        $subtitles = [];
         for ($i = 0; $i < $titles->length; $i++) {
-            $results[] = ['title' => trim($titles[$i]->nodeValue), 'url' => $this->base_url.$urls[$i]->nodeValue];
+            $subtitles[] = ['title' => trim($titles[$i]->nodeValue), 'language' => trim($languages[$i]->nodeValue), 'author' => trim($authors[$i]->nodeValue), 'url' => $this->base_url.$urls[$i]->nodeValue];
         }
+        $result['subtitles'] = $subtitles;
 
-        return $results;
+        return $result;
     }
 
     public function getDownloadUrl($url, $exit_on_bad_request = false)
     {
         $page = $this->curl_get_contents($url);
-        if ($this->isBadRequest($page)) {
-            if ($exit_on_bad_request) {
+        if(!$this->isLoggedIn($page)) {
+            if($exit_on_bad_request) {
                 return false;
             }
             $this->login($this->username, $this->password);
-
             return $this->getDownloadUrl($url, true);
         }
-        $url = $this->xpathQuery('//a[@id=\'downloadButton\']/@href', $page);
+        $result = [];
+        $url = $this->xpathQuery('//a[@id="downloadButton"]/@href', $page);
         if ($url->length < 1) {
             return false;
         }
+        foreach([
+            'name' => '//span[@itemprop="name"]',
+            'poster' => '//img[@alt="Poster"]/@src',
+            'author' => '//li[@class="author"]/a/text()',
+            'comment' => '//div[@class="comment"]',
+            'imdb' => '//a[@class="imdb"]/@href'
+        ] as $part => $query) {
+            ${$part} = $this->xpathQuery($query, $page);
+            if (${$part}->length > 0) {
+                $result[$part] = trim(${$part}[0]->nodeValue);
+            }
+        }
+        $info = $this->xpathQuery('//li[@class="release"]/div', $page);
+        if ($info->length > 0) {
+            $info_text = '';
+            for($i = 0; $i < $info->length; $i++) {
+                $info_text .= trim($info[$i]->nodeValue)."\n";
+            }
+            $result['info'] = $info_text;
+        }
+        $result['url'] = $this->base_url.$url[0]->nodeValue;
 
-        return $this->base_url.$url[0]->nodeValue;
+        return $result;
+    }
+
+    public function setLanguages($languages = []) {
+        if(empty($languages)) {
+            $languages = $this->languages;
+        }
+        $parameters = 'ReturnUrl=';
+        foreach($languages as $language) {
+            $parameters .= '&SelectedIds='.$language;
+        }
+        $parameters .= '&HearingImpaired=2&ForeignOnly=false';
+        $this->curl_post('https://u.subscene.com/filter', $parameters);
     }
 
     public function login($username, $password)
     {
         $login_info = $this->curl_get_contents($this->base_url.'/account/login');
         $login_info = $this->xpathQuery('//script[@id="modelJson"]', $login_info);
-        if ($login_info->length < 1) {
+        if($login_info->length < 1) {
             return false;
         }
         $login_info = json_decode(htmlspecialchars_decode(trim($login_info[0]->nodeValue)), true);
         $form_info = $this->curl_post('https://identity.jeded.com'.$login_info['loginUrl'], http_build_query(['idsrv.xsrf' => $login_info['antiForgery']['value'], 'username' => $username, 'password' => $password, 'rememberMe' => 'true']));
         $form = [];
-        foreach (['id_token', 'access_token', 'token_type', 'expires_in', 'scope', 'state', 'session_state'] as $key) {
+        foreach(['id_token', 'access_token', 'token_type', 'expires_in', 'scope', 'state', 'session_state'] as $key) {
             ${$key} = $this->xpathQuery('//input[@name="'.$key.'"]/@value', $form_info);
-            if (${$key}->length < 1) {
+            if(${$key}->length < 1) {
                 return false;
             }
             ${$key} = ${$key}[0]->nodeValue;
             $form[$key] = ${$key};
         }
         $this->curl_post($this->base_url, http_build_query($form));
+        $this->setLanguages();
 
         return true;
     }
@@ -156,8 +205,9 @@ class Subscene
         return $results;
     }
 
-    private function isBadRequest($html)
+    private function isLoggedIn($html)
     {
-        return strpos($html, 'Bad request') !== false;
+        return strpos($html, 'logout') !== false;
     }
+
 }
