@@ -63,7 +63,7 @@ class Subscene
         }
         $result = [];
         foreach ([
-            'name' => '//h2/text()',
+            'title' => '//h2/text()',
             'year' => '//li[strong[contains(text(), "Year")]]/text()[last()]',
             'poster' => '//img[@alt="Poster"]/@src',
             'imdb' => '//a[@class="imdb"]/@href',
@@ -75,18 +75,20 @@ class Subscene
         }
         $titles = $this->xpathQuery('//tr/td/a/span[2]/text()', $page);
         $languages = $this->xpathQuery('//tr/td/a/span[1]/text()', $page);
-        $authors = $this->xpathQuery('//td[@class="a5"]/a/text()', $page);
+        $authors_names = $this->xpathQuery('//td[@class="a5"]/a/text()', $page);
+        $authors_urls = $this->xpathQuery('//td[@class="a5"]/a/@href', $page);
+        $comments = $this->xpathQuery('//td[@class="a6"]/div/text()', $page);
         $urls = $this->xpathQuery('//tr/td[1]/a/@href', $page);
         $subtitles = [];
         for ($i = 0; $i < $titles->length; $i++) {
-            $subtitles[] = ['title' => trim($titles[$i]->nodeValue), 'language' => trim($languages[$i]->nodeValue), 'author' => trim($authors[$i]->nodeValue), 'url' => $this->base_url.$urls[$i]->nodeValue];
+            $subtitles[] = ['title' => trim($titles[$i]->nodeValue), 'language' => trim($languages[$i]->nodeValue), 'author' => ['name' => trim($authors_names[$i]->nodeValue), 'url' => trim($authors_urls[$i]->nodeValue)], 'comment' => trim($comments[$i]->nodeValue), 'url' => $this->base_url.$urls[$i]->nodeValue];
         }
         $result['subtitles'] = $subtitles;
 
         return $result;
     }
 
-    public function getDownloadUrl($url, $exit_on_bad_request = false)
+    public function getSubtitleInfo($url, $exit_on_bad_request = false)
     {
         $page = $this->curl_get_contents($url);
         if (!$this->isLoggedIn($page)) {
@@ -95,7 +97,7 @@ class Subscene
             }
             $this->login($this->username, $this->password);
 
-            return $this->getDownloadUrl($url, true);
+            return $this->getSubtitleInfo($url, true);
         }
         $result = [];
         $url = $this->xpathQuery('//a[@id="downloadButton"]/@href', $page);
@@ -103,7 +105,7 @@ class Subscene
             return false;
         }
         foreach ([
-            'name' => '//span[@itemprop="name"]',
+            'title' => '//span[@itemprop="name"]',
             'poster' => '//img[@alt="Poster"]/@src',
             'author' => '//li[@class="author"]/a/text()',
             'comment' => '//div[@class="comment"]',
@@ -114,6 +116,11 @@ class Subscene
                 $result[$part] = trim(${$part}[0]->nodeValue);
             }
         }
+        $dom = new DomDocument();
+        $dom->loadHTML($page);
+        $xpath = new DomXPath($dom);
+        $preview = $xpath->query('//div[@id="preview"]/p');
+        $result['preview'] = $preview[0]->ownerDocument->saveHTML($preview[0]);
         $info = $this->xpathQuery('//li[@class="release"]/div', $page);
         if ($info->length > 0) {
             $info_text = '';
@@ -122,9 +129,69 @@ class Subscene
             }
             $result['info'] = $info_text;
         }
+        $details = $this->xpathQuery('//div[@id="details"]/ul/li', $page);
+        if ($details->length > 0) {
+            $details_text = '';
+            for ($i = 0; $i < $details->length; $i++) {
+                $details_text .= trim(str_replace(["\n", "\r", "\t"], '', $details[$i]->nodeValue))."\n";
+            }
+            $result['details'] = $details_text;
+        }
         $result['url'] = $this->base_url.$url[0]->nodeValue;
 
         return $result;
+    }
+
+    public function getHome()
+    {
+        $page = $this->curl_get_contents($this->base_url);
+        $result = ['popular' => [], 'popular_tv' => [], 'recent' => []];
+
+        // Popular subtitles
+        $titles = $this->xpathQuery('//div[@class="popular-films"]/div[@class="box"][1]//div[@class="title"]/a[1]/text()', $page);
+        $posters = $this->xpathQuery('//div[@class="popular-films"]/div[@class="box"][1]//div[@class="poster"]/img/@src', $page);
+        $imdbs = $this->xpathQuery('//div[@class="popular-films"]/div[@class="box"][1]//div[@class="title"]/a[2]/@href', $page);
+        $urls = $this->xpathQuery('//div[@class="popular-films"]/div[@class="box"][1]//div[@class="title"]/a[1]/@href', $page);
+        for ($i = 0; $i < $titles->length; $i++) {
+            $item = ['title' => trim($titles[$i]->nodeValue), 'poster' => $posters[$i]->nodeValue, 'url' => $this->base_url.$urls[$i]->nodeValue];
+            if (!empty($imdbs[$i])) {
+                $item['poseter'] = $posters[$i]->nodeValue;
+            }
+            $result['popular'][] = $item;
+        }
+
+        // Popular tv subtitles
+        $titles = $this->xpathQuery('//div[@class="popular-films"]/div[@class="box"][2]//div[@class="title"]/a[1]/text()', $page);
+        $posters = $this->xpathQuery('//div[@class="popular-films"]/div[@class="box"][2]//div[@class="poster"]/img/@src', $page);
+        $imdbs = $this->xpathQuery('//div[@class="popular-films"]/div[@class="box"][2]//div[@class="title"]/a[2]/@href', $page);
+        $urls = $this->xpathQuery('//div[@class="popular-films"]/div[@class="box"][2]//div[@class="title"]/a[1]/@href', $page);
+        for ($i = 0; $i < $titles->length; $i++) {
+            $item = ['title' => trim($titles[$i]->nodeValue), 'poster' => $posters[$i]->nodeValue, 'url' => $this->base_url.$urls[$i]->nodeValue];
+            if (!empty($imdbs[$i])) {
+                $item['poseter'] = $posters[$i]->nodeValue;
+            }
+            $result['popular_tv'][] = $item;
+        }
+
+        // Recent subtitles
+        $titles = $this->xpathQuery('//div[@class="recent-subtitles"]//li/div/a/text()[last()]', $page);
+        $urls = $this->xpathQuery('//div[@class="recent-subtitles"]//li/div/a/@href', $page);
+        $contributors_names = $this->xpathQuery('//div[@class="recent-subtitles"]//li/address/a/text()', $page);
+        $contributors_urls = $this->xpathQuery('//div[@class="recent-subtitles"]//li/address/a/@href', $page);
+        for ($i = 0; $i < $titles->length; $i++) {
+            $result['recent'][] = ['title' => trim($titles[$i]->nodeValue), 'contributor' => ['name' => trim($contributors_names[$i]->nodeValue), 'url' => $this->base_url.trim($contributors_urls[$i]->nodeValue)], 'url' => $this->base_url.$urls[$i]->nodeValue];
+        }
+
+        return $result;
+    }
+
+    public function getDownload($url, $filename) {
+        $data = $this->curl_get_contents($url);
+        $file_name = $filename;
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename='.$file_name);
+        header('Content-Length: '.strlen($data));
+        die($data);
     }
 
     public function setLanguages($languages = [])
