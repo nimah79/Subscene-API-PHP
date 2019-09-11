@@ -1,9 +1,6 @@
 # Subscene-API-PHP
 Unofficial API for Subscene subtitle service, written in PHP
 
-## Required parameters:
-`movie`
-
 ## Usage
 Just include `Subscene.php` to your project and use it:
 ```
