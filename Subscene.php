@@ -137,7 +137,7 @@ class Subscene
             }
             $result['details'] = $details_text;
         }
-        $result['url'] = $this->base_url.$url[0]->nodeValue;
+        $result['download_url'] = $this->base_url.$url[0]->nodeValue;
 
         return $result;
     }
