@@ -6,8 +6,6 @@
  * http://NimaH79.ir
  */
 
-libxml_use_internal_errors(true);
-
 class Subscene
 {
     private $username;
@@ -266,6 +264,7 @@ class Subscene
 
     private function xpathQuery($query, $html)
     {
+        $libxml_use_internal_errors = libxml_use_internal_errors(true);
         if (empty($query) || empty($html)) {
             return false;
         }
@@ -273,6 +272,7 @@ class Subscene
         $dom->loadHTML($html);
         $xpath = new DomXPath($dom);
         $results = $xpath->query($query);
+        libxml_use_internal_errors($libxml_use_internal_errors);
 
         return $results;
     }
