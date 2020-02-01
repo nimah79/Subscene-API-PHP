@@ -1,6 +1,6 @@
 <?php
 
-/*
+/**
  * Subscene-API-PHP
  * By NimaH79
  * http://NimaH79.ir
