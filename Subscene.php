@@ -3,9 +3,8 @@
 /**
  * Subscene-API-PHP
  * By NimaH79
- * http://NimaH79.ir
+ * http://NimaH79.ir.
  */
-
 class Subscene
 {
     private $username;
