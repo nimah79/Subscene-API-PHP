@@ -113,6 +113,7 @@ class Subscene
                 $result[$part] = trim(${$part}[0]->nodeValue);
             }
         }
+        $libxml_use_internal_errors = libxml_use_internal_errors(true);
         $dom = new DomDocument();
         $dom->loadHTML($page);
         $xpath = new DomXPath($dom);
@@ -135,6 +136,7 @@ class Subscene
             $result['details'] = $details_text;
         }
         $result['download_url'] = $this->base_url.$url[0]->nodeValue;
+        libxml_use_internal_errors($libxml_use_internal_errors);
 
         return $result;
     }
