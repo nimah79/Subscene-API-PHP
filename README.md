@@ -8,7 +8,7 @@ Just include `Subscene.php` to your project and use it:
 
 require_once __DIR__.'/Subscene.php';
 
-$subscene = new Subscene('YOUR_USERNAME', 'YUOR_PASSWORD');
+$subscene = new Subscene();
 
 $movies = $subscene->search('Fast Five');
 // Array
