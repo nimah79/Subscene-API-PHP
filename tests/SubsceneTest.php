@@ -16,7 +16,7 @@ final class SubsceneTest extends TestCase
     public function testSearch()
     {
         require_once __DIR__.'/../Subscene.php';
-        $subscene = new Subscene('ntrolly79', '10111379');
+        $subscene = new Subscene();
         $this->assertNotEmpty($subscene->search('Fast Five'));
         $this->clean();
     }
@@ -24,7 +24,7 @@ final class SubsceneTest extends TestCase
     public function testGetSubtitles()
     {
         require_once __DIR__.'/../Subscene.php';
-        $subscene = new Subscene('ntrolly79', '10111379');
+        $subscene = new Subscene();
         $this->assertNotEmpty($subscene->getSubtitles('https://subscene.com/subtitles/fast-five-fast-and-furious-5-the-rio-heist'));
         $this->clean();
     }
@@ -32,7 +32,7 @@ final class SubsceneTest extends TestCase
     public function testGetSubtitleInfo()
     {
         require_once __DIR__.'/../Subscene.php';
-        $subscene = new Subscene('ntrolly79', '10111379');
+        $subscene = new Subscene();
         $this->assertNotEmpty($subscene->getSubtitleInfo('https://subscene.com/subtitles/fast-five-fast-and-furious-5-the-rio-heist/farsi_persian/1108695'));
         $this->clean();
     }
