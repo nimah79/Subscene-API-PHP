@@ -1,16 +1,17 @@
 # Subscene-API-PHP
+
 Unofficial API for Subscene subtitle service, written in PHP
 
 ## Usage
+
 Just include `Subscene.php` to your project and use it:
+
 ```php
 <?php
 
-require_once __DIR__.'/Subscene.php';
+require_once __DIR__ . "/Subscene.php";
 
-$subscene = new Subscene();
-
-$movies = $subscene->search('Fast Five');
+$movies = Subscene::search("Fast Five");
 // Array
 // (
 //     [0] => Array
@@ -38,7 +39,7 @@ $movies = $subscene->search('Fast Five');
 //         )
 // )
 
-$subtitles = $subscene->getSubtitles('https://subscene.com/subtitles/fast-five-fast-and-furious-5-the-rio-heist');
+$subtitles = Subscene::getSubtitles("https://subscene.com/subtitles/fast-five-fast-and-furious-5-the-rio-heist");
 // Array
 // (
 //     [title] => Fast Five (Fast & Furious 5: The Rio Heist)
@@ -54,7 +55,7 @@ $subtitles = $subscene->getSubtitles('https://subscene.com/subtitles/fast-five-f
 //                     [author] => Array
 //                         (
 //                             [name] => msasanmh
-//                             [url] => /u/797826
+//                             [url] => https://subscene.com/u/797826
 //                         )
 // 
 //                     [comment] => برای تمامی نسخه‌های بلوری و غیر اکستندد ---ترجمه جدید سال 2015 
@@ -68,7 +69,7 @@ $subtitles = $subscene->getSubtitles('https://subscene.com/subtitles/fast-five-f
 //                     [author] => Array
 //                         (
 //                             [name] => msasanmh
-//                             [url] => /u/797826
+//                             [url] => https://subscene.com/u/797826
 //                         )
 // 
 //                     [comment] => برای تمامی نسخه‌های بلوری و غیر اکستندد ---ترجمه جدید سال 2015 
@@ -76,7 +77,7 @@ $subtitles = $subscene->getSubtitles('https://subscene.com/subtitles/fast-five-f
 //                 )
 // )
 
-$subtitle_info = $subscene->getSubtitleInfo('https://subscene.com/subtitles/fast-five-fast-and-furious-5-the-rio-heist/farsi_persian/1108695');
+$subtitle_info = Subscene::getSubtitleInfo("https://subscene.com/subtitles/fast-five-fast-and-furious-5-the-rio-heist/farsi_persian/1108695");
 // Array
 // (
 //     [title] => Fast Five (Fast & Furious 5: The Rio Heist)
