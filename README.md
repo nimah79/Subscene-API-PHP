@@ -3,7 +3,7 @@ Unofficial API for Subscene subtitle service, written in PHP
 
 ## Usage
 Just include `Subscene.php` to your project and use it:
-```
+```php
 <?php
 
 require_once __DIR__.'/Subscene.php';
