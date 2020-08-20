@@ -7,14 +7,14 @@
  */
 class Subscene
 {
-    private static $base_url = "https://subscene.com";
+    private static $base_url = 'https://subscene.com';
 
     public static function search(string $title): array
     {
         $page = self::curl_post(
-            self::$base_url . "/subtitles/searchbytitle",
+            self::$base_url.'/subtitles/searchbytitle',
             [
-                "query" => $title
+                'query' => $title,
             ]
         );
         $titles = self::xpathQuery("//ul/li/div[@class='title']/a/text()", $page);
@@ -22,8 +22,8 @@ class Subscene
         $results = [];
         for ($i = 0; $i < count($titles); $i++) {
             $results[] = [
-                "title" => $titles[$i]->nodeValue,
-                "url" => self::$base_url . $urls[$i]->nodeValue
+                'title' => $titles[$i]->nodeValue,
+                'url'   => self::$base_url.$urls[$i]->nodeValue,
             ];
         }
 
@@ -34,15 +34,15 @@ class Subscene
     {
         $cookie = null;
         if (!empty($languages)) {
-            $cookie = "LanguageFilter=" . implode(",", $languages);
+            $cookie = 'LanguageFilter='.implode(',', $languages);
         }
         $page = self::curl_get_contents($url, $cookie);
         $result = [];
         foreach ([
-            "title" => "//h2/text()",
-            "year" => "//li[strong[contains(text(), 'Year')]]/text()[last()]",
-            "poster" => "//img[@alt='Poster']/@src",
-            "imdb" => "//a[@target='_blank' and @class='imdb']/@href",
+            'title' => '//h2/text()',
+            'year' => "//li[strong[contains(text(), 'Year')]]/text()[last()]",
+            'poster' => "//img[@alt='Poster']/@src",
+            'imdb' => "//a[@target='_blank' and @class='imdb']/@href",
         ] as $part => $query) {
             ${$part} = self::xpathQuery($query, $page);
             if (count(${$part}) > 0) {
@@ -50,28 +50,28 @@ class Subscene
             }
         }
         $subtitle_nodes = self::xpathQuery("//tr[td[@class='a5']]", $page);
-        $titles = self::xpathQuery("//tr/td/a/span[2]/text()", $page);
-        $languages = self::xpathQuery("//tr/td/a/span[1]/text()", $page);
+        $titles = self::xpathQuery('//tr/td/a/span[2]/text()', $page);
+        $languages = self::xpathQuery('//tr/td/a/span[1]/text()', $page);
         $authors_names = self::xpathQuery("//td[@class='a5']/a/text()", $page);
         $authors_urls = self::xpathQuery("//td[@class='a5']/a/@href", $page);
         $comments = self::xpathQuery("//td[@class='a6']/div/text()", $page);
-        $urls = self::xpathQuery("//tr/td[1]/a/@href", $page);
+        $urls = self::xpathQuery('//tr/td[1]/a/@href', $page);
         $subtitles = [];
         foreach ($subtitle_nodes as $subtitle_node) {
             $subtitle_node_html = $subtitle_node->ownerDocument->saveHTML($subtitle_node);
-            $title = trim(self::xpathQuery("//td/a/span[2]/text()", $subtitle_node_html)[0]->nodeValue);
-            $language = trim(self::xpathQuery("//td/a/span[1]/text()", $subtitle_node_html)[0]->nodeValue);
+            $title = trim(self::xpathQuery('//td/a/span[2]/text()', $subtitle_node_html)[0]->nodeValue);
+            $language = trim(self::xpathQuery('//td/a/span[1]/text()', $subtitle_node_html)[0]->nodeValue);
             $author_name = self::xpathEvaluate("boolean(//td[@class='a5']/a/text())", $subtitle_node_html) ? trim(self::xpathQuery("//td[@class='a5']/a/text()", $subtitle_node_html)[0]->nodeValue) : trim(self::xpathQuery("//td[@class='a5']/text()", $subtitle_node_html)[0]->nodeValue);
-            $author_url = $author_name = self::xpathEvaluate("boolean(//td[@class='a5']/a/@href)", $subtitle_node_html) ? (self::$base_url . trim(self::xpathQuery("//td[@class='a5']/a/@href", $subtitle_node_html)[0]->nodeValue)) : "n/A";
+            $author_url = $author_name = self::xpathEvaluate("boolean(//td[@class='a5']/a/@href)", $subtitle_node_html) ? (self::$base_url.trim(self::xpathQuery("//td[@class='a5']/a/@href", $subtitle_node_html)[0]->nodeValue)) : 'n/A';
             $author = [
-                "name" => $author_name,
-                "url" => $author_url
+                'name' => $author_name,
+                'url'  => $author_url,
             ];
             $comment = trim(self::xpathQuery("//td[@class='a6']/div/text()", $subtitle_node_html)[0]->nodeValue);
-            $url = self::$base_url . trim(self::xpathQuery("//tr/td[1]/a/@href", $subtitle_node_html)[0]->nodeValue);
-            $subtitles[] = compact("title", "language", "author", "comment", "url");
+            $url = self::$base_url.trim(self::xpathQuery('//tr/td[1]/a/@href', $subtitle_node_html)[0]->nodeValue);
+            $subtitles[] = compact('title', 'language', 'author', 'comment', 'url');
         }
-        $result["subtitles"] = $subtitles;
+        $result['subtitles'] = $subtitles;
 
         return $result;
     }
@@ -85,11 +85,11 @@ class Subscene
             return false;
         }
         foreach ([
-            "title" => "//span[@itemprop='name']",
-            "poster" => "//img[@alt='Poster']/@src",
-            "author" => "//li[@class='author']/a/text()",
-            "comment" => "//div[@class='comment']",
-            "imdb" => "//a[@class='imdb']/@href",
+            'title' => "//span[@itemprop='name']",
+            'poster' => "//img[@alt='Poster']/@src",
+            'author' => "//li[@class='author']/a/text()",
+            'comment' => "//div[@class='comment']",
+            'imdb' => "//a[@class='imdb']/@href",
         ] as $part => $query) {
             ${$part} = self::xpathQuery($query, $page);
             if (count(${$part}) > 0) {
@@ -97,24 +97,24 @@ class Subscene
             }
         }
         $preview = self::xpathQuery("//div[@id='preview']/p", $page);
-        $result["preview"] = $preview[0]->ownerDocument->saveHTML($preview[0]);
+        $result['preview'] = $preview[0]->ownerDocument->saveHTML($preview[0]);
         $info = self::xpathQuery("//li[@class='release']/div", $page);
         if (count($info) > 0) {
-            $info_text = "";
+            $info_text = '';
             for ($i = 0; $i < count($info); $i++) {
-                $info_text .= trim($info[$i]->nodeValue) . "\n";
+                $info_text .= trim($info[$i]->nodeValue)."\n";
             }
-            $result["info"] = $info_text;
+            $result['info'] = $info_text;
         }
         $details = self::xpathQuery("//div[@id='details']/ul/li", $page);
         if (count($details) > 0) {
-            $details_text = "";
+            $details_text = '';
             for ($i = 0; $i < count($details); $i++) {
-                $details_text .= trim(str_replace(["\n", "\r", "\t"], "", $details[$i]->nodeValue)) . "\n";
+                $details_text .= trim(str_replace(["\n", "\r", "\t"], '', $details[$i]->nodeValue))."\n";
             }
-            $result["details"] = $details_text;
+            $result['details'] = $details_text;
         }
-        $result["download_url"] = self::$base_url . $url[0]->nodeValue;
+        $result['download_url'] = self::$base_url.$url[0]->nodeValue;
 
         return $result;
     }
@@ -123,9 +123,9 @@ class Subscene
     {
         $page = self::curl_get_contents(self::$base_url);
         $result = [
-            "popular" => [],
-            "popular_tv" => [],
-            "recent" => []
+            'popular'    => [],
+            'popular_tv' => [],
+            'recent'     => [],
         ];
 
         // Popular subtitles
@@ -135,14 +135,14 @@ class Subscene
         $urls = self::xpathQuery("//div[@class='popular-films']/div[@class='box'][1]//div[@class='title']/a[1]/@href", $page);
         for ($i = 0; $i < count($titles); $i++) {
             $item = [
-                "title" => trim($titles[$i]->nodeValue),
-                "poster" => $posters[$i]->nodeValue,
-                "url" => self::$base_url . $urls[$i]->nodeValue
+                'title'  => trim($titles[$i]->nodeValue),
+                'poster' => $posters[$i]->nodeValue,
+                'url'    => self::$base_url.$urls[$i]->nodeValue,
             ];
             if (!empty($imdbs[$i])) {
-                $item["poseter"] = $posters[$i]->nodeValue;
+                $item['poseter'] = $posters[$i]->nodeValue;
             }
-            $result["popular"][] = $item;
+            $result['popular'][] = $item;
         }
 
         // Popular tv subtitles
@@ -152,14 +152,14 @@ class Subscene
         $urls = self::xpathQuery("//div[@class='popular-films']/div[@class='box'][2]//div[@class='title']/a[1]/@href", $page);
         for ($i = 0; $i < count($titles); $i++) {
             $item = [
-                "title" => trim($titles[$i]->nodeValue),
-                "poster" => $posters[$i]->nodeValue,
-                "url" => self::$base_url . $urls[$i]->nodeValue
+                'title'  => trim($titles[$i]->nodeValue),
+                'poster' => $posters[$i]->nodeValue,
+                'url'    => self::$base_url.$urls[$i]->nodeValue,
             ];
             if (!empty($imdbs[$i])) {
-                $item["poseter"] = $posters[$i]->nodeValue;
+                $item['poseter'] = $posters[$i]->nodeValue;
             }
-            $result["popular_tv"][] = $item;
+            $result['popular_tv'][] = $item;
         }
 
         // Recent subtitles
@@ -168,13 +168,13 @@ class Subscene
         $contributors_names = self::xpathQuery("//div[@class='recent-subtitles']//li/address/a/text()", $page);
         $contributors_urls = self::xpathQuery("//div[@class='recent-subtitles']//li/address/a/@href", $page);
         for ($i = 0; $i < count($titles); $i++) {
-            $result["recent"][] = [
-                "title" => trim($titles[$i]->nodeValue),
-                "contributor" => [
-                    "name" => trim($contributors_names[$i]->nodeValue),
-                    "url" => self::$base_url . trim($contributors_urls[$i]->nodeValue)
+            $result['recent'][] = [
+                'title'       => trim($titles[$i]->nodeValue),
+                'contributor' => [
+                    'name' => trim($contributors_names[$i]->nodeValue),
+                    'url'  => self::$base_url.trim($contributors_urls[$i]->nodeValue),
                 ],
-                "url" => self::$base_url . $urls[$i]->nodeValue
+                'url' => self::$base_url.$urls[$i]->nodeValue,
             ];
         }
 
@@ -185,9 +185,9 @@ class Subscene
     {
         $data = self::curl_get_contents($url);
         $file_name = $filename;
-        header("Content-Type: application/zip");
+        header('Content-Type: application/zip');
         header("Content-Disposition: attachment; filename=$file_name");
-        header("Content-Length: " . strlen($data));
+        header('Content-Length: '.strlen($data));
         echo $data;
     }
 
@@ -198,7 +198,7 @@ class Subscene
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false
+            CURLOPT_SSL_VERIFYHOST => false,
         ]);
         if (!is_null($cookie)) {
             curl_setopt($ch, CURLOPT_COOKIE, $cookie);
@@ -217,8 +217,8 @@ class Subscene
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $parameters
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $parameters,
         ]);
         $response = curl_exec($ch);
         curl_close($ch);
