@@ -7,36 +7,22 @@
  */
 class Subscene
 {
-    private $username;
-    private $password;
-    private $cookie_file;
     private $languages;
 
     private $base_url = 'https://subscene.com';
 
-    public function __construct($username, $password, $languages = [46], $cookie_file = __DIR__.'/cookies.txt')
-    { // 46 is for Persian
+    public function __construct($languages = [])
+    {
         foreach ([
-            'username',
-            'password',
-            'cookie_file',
             'languages',
         ] as $var) {
             $this->{$var} = ${$var};
         }
     }
 
-    public function search($title, $exit_on_bad_request = false)
+    public function search($title)
     {
         $page = $this->curl_post($this->base_url.'/subtitles/searchbytitle', ['query' => $title]);
-        if (!$this->isLoggedIn($page)) {
-            if ($exit_on_bad_request) {
-                return false;
-            }
-            $this->login($this->username, $this->password);
-
-            return $this->search($title, true);
-        }
         $titles = $this->xpathQuery('//ul/li/div[@class="title"]/a/text()', $page);
         $urls = $this->xpathQuery('//ul/li/div[@class="title"]/a/@href', $page);
         $results = [];
@@ -47,17 +33,9 @@ class Subscene
         return $results;
     }
 
-    public function getSubtitles($url, $exit_on_bad_request = false)
+    public function getSubtitles($url)
     {
         $page = $this->curl_get_contents($url);
-        if (!$this->isLoggedIn($page)) {
-            if ($exit_on_bad_request) {
-                return false;
-            }
-            $this->login($this->username, $this->password);
-
-            return $this->getSubtitles($url, true);
-        }
         $result = [];
         foreach ([
             'title' => '//h2/text()',
@@ -85,17 +63,9 @@ class Subscene
         return $result;
     }
 
-    public function getSubtitleInfo($url, $exit_on_bad_request = false)
+    public function getSubtitleInfo($url)
     {
         $page = $this->curl_get_contents($url);
-        if (!$this->isLoggedIn($page)) {
-            if ($exit_on_bad_request) {
-                return false;
-            }
-            $this->login($this->username, $this->password);
-
-            return $this->getSubtitleInfo($url, true);
-        }
         $result = [];
         $url = $this->xpathQuery('//a[@id="downloadButton"]/@href', $page);
         if ($url->length < 1) {
@@ -194,41 +164,9 @@ class Subscene
         die($data);
     }
 
-    public function setLanguages($languages = [])
+    public function setLanguages($languages)
     {
-        if (empty($languages)) {
-            $languages = $this->languages;
-        }
-        $parameters = 'ReturnUrl=';
-        foreach ($languages as $language) {
-            $parameters .= '&SelectedIds='.$language;
-        }
-        $parameters .= '&HearingImpaired=2&ForeignOnly=false';
-        $this->curl_post('https://u.subscene.com/filter', $parameters);
-    }
-
-    public function login($username, $password)
-    {
-        $login_info = $this->curl_get_contents($this->base_url.'/account/login');
-        $login_info = $this->xpathQuery('//script[@id="modelJson"]', $login_info);
-        if ($login_info->length < 1) {
-            return false;
-        }
-        $login_info = json_decode(htmlspecialchars_decode(trim($login_info[0]->nodeValue)), true);
-        $form_info = $this->curl_post('https://identity.jeded.com'.$login_info['loginUrl'], http_build_query(['idsrv.xsrf' => $login_info['antiForgery']['value'], 'username' => $username, 'password' => $password, 'rememberMe' => 'true']));
-        $form = [];
-        foreach (['id_token', 'access_token', 'token_type', 'expires_in', 'scope', 'state', 'session_state'] as $key) {
-            ${$key} = $this->xpathQuery('//input[@name="'.$key.'"]/@value', $form_info);
-            if (${$key}->length < 1) {
-                return false;
-            }
-            ${$key} = ${$key}[0]->nodeValue;
-            $form[$key] = ${$key};
-        }
-        $this->curl_post($this->base_url, http_build_query($form));
-        $this->setLanguages();
-
-        return true;
+        $this->languages = $languages;
     }
 
     private function curl_get_contents($url)
@@ -238,8 +176,6 @@ class Subscene
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_COOKIEFILE, $this->cookie_file);
-        curl_setopt($ch, CURLOPT_COOKIEJAR, $this->cookie_file);
         $response = curl_exec($ch);
         curl_close($ch);
 
@@ -253,8 +189,6 @@ class Subscene
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_COOKIEFILE, $this->cookie_file);
-        curl_setopt($ch, CURLOPT_COOKIEJAR, $this->cookie_file);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $parameters);
         $response = curl_exec($ch);
@@ -276,10 +210,5 @@ class Subscene
         libxml_use_internal_errors($libxml_use_internal_errors);
 
         return $results;
-    }
-
-    private function isLoggedIn($html)
-    {
-        return strpos($html, 'logout') !== false;
     }
 }
