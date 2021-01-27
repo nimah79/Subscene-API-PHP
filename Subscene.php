@@ -7,12 +7,13 @@
  */
 class Subscene
 {
-    private static $base_url = 'https://subscene.com';
+    private const BASE_URL = 'https://subscene.com';
+    private const USERAGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36';
 
     public static function search(string $title): array
     {
         $page = self::curl_post(
-            self::$base_url.'/subtitles/searchbytitle',
+            self::BASE_URL.'/subtitles/searchbytitle',
             [
                 'query' => $title,
             ]
@@ -23,7 +24,7 @@ class Subscene
         for ($i = 0; $i < count($titles); $i++) {
             $results[] = [
                 'title' => $titles[$i]->nodeValue,
-                'url'   => self::$base_url.$urls[$i]->nodeValue,
+                'url'   => self::BASE_URL.$urls[$i]->nodeValue,
             ];
         }
 
@@ -62,13 +63,13 @@ class Subscene
             $title = trim(self::xpathQuery('//td/a/span[2]/text()', $subtitle_node_html)[0]->nodeValue);
             $language = trim(self::xpathQuery('//td/a/span[1]/text()', $subtitle_node_html)[0]->nodeValue);
             $author_name = self::xpathEvaluate("boolean(//td[@class='a5']/a/text())", $subtitle_node_html) ? trim(self::xpathQuery("//td[@class='a5']/a/text()", $subtitle_node_html)[0]->nodeValue) : trim(self::xpathQuery("//td[@class='a5']/text()", $subtitle_node_html)[0]->nodeValue);
-            $author_url = $author_name = self::xpathEvaluate("boolean(//td[@class='a5']/a/@href)", $subtitle_node_html) ? (self::$base_url.trim(self::xpathQuery("//td[@class='a5']/a/@href", $subtitle_node_html)[0]->nodeValue)) : 'n/A';
+            $author_url = $author_name = self::xpathEvaluate("boolean(//td[@class='a5']/a/@href)", $subtitle_node_html) ? (self::BASE_URL.trim(self::xpathQuery("//td[@class='a5']/a/@href", $subtitle_node_html)[0]->nodeValue)) : 'n/A';
             $author = [
                 'name' => $author_name,
                 'url'  => $author_url,
             ];
             $comment = trim(self::xpathQuery("//td[@class='a6']/div/text()", $subtitle_node_html)[0]->nodeValue);
-            $url = self::$base_url.trim(self::xpathQuery('//tr/td[1]/a/@href', $subtitle_node_html)[0]->nodeValue);
+            $url = self::BASE_URL.trim(self::xpathQuery('//tr/td[1]/a/@href', $subtitle_node_html)[0]->nodeValue);
             $subtitles[] = compact('title', 'language', 'author', 'comment', 'url');
         }
         $result['subtitles'] = $subtitles;
@@ -114,14 +115,14 @@ class Subscene
             }
             $result['details'] = $details_text;
         }
-        $result['download_url'] = self::$base_url.$url[0]->nodeValue;
+        $result['download_url'] = self::BASE_URL.$url[0]->nodeValue;
 
         return $result;
     }
 
     public static function getHome(): array
     {
-        $page = self::curl_get_contents(self::$base_url);
+        $page = self::curl_get_contents(self::BASE_URL);
         $result = [
             'popular'    => [],
             'popular_tv' => [],
@@ -137,7 +138,7 @@ class Subscene
             $item = [
                 'title'  => trim($titles[$i]->nodeValue),
                 'poster' => $posters[$i]->nodeValue,
-                'url'    => self::$base_url.$urls[$i]->nodeValue,
+                'url'    => self::BASE_URL.$urls[$i]->nodeValue,
             ];
             if (!empty($imdbs[$i])) {
                 $item['poseter'] = $posters[$i]->nodeValue;
@@ -154,7 +155,7 @@ class Subscene
             $item = [
                 'title'  => trim($titles[$i]->nodeValue),
                 'poster' => $posters[$i]->nodeValue,
-                'url'    => self::$base_url.$urls[$i]->nodeValue,
+                'url'    => self::BASE_URL.$urls[$i]->nodeValue,
             ];
             if (!empty($imdbs[$i])) {
                 $item['poseter'] = $posters[$i]->nodeValue;
@@ -172,9 +173,9 @@ class Subscene
                 'title'       => trim($titles[$i]->nodeValue),
                 'contributor' => [
                     'name' => trim($contributors_names[$i]->nodeValue),
-                    'url'  => self::$base_url.trim($contributors_urls[$i]->nodeValue),
+                    'url'  => self::BASE_URL.trim($contributors_urls[$i]->nodeValue),
                 ],
-                'url' => self::$base_url.$urls[$i]->nodeValue,
+                'url' => self::BASE_URL.$urls[$i]->nodeValue,
             ];
         }
 
@@ -199,7 +200,7 @@ class Subscene
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
+            CURLOPT_USERAGENT      => self::USERAGENT,
         ]);
         if (!is_null($cookie)) {
             curl_setopt($ch, CURLOPT_COOKIE, $cookie);
@@ -218,9 +219,9 @@ class Subscene
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_USERAGENT      => self::USERAGENT,
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $parameters,
-            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
         ]);
         $response = curl_exec($ch);
         curl_close($ch);
